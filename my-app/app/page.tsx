@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { DataTableDemo } from "./table/page";
+import { DataTableDemo } from "./table/table";
 import { NavigationMenuDemo } from "./nav/nav";
 
 export default function Home() {
