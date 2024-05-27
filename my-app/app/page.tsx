@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { DataTableDemo } from "./table/page";
-import { NavigationMenuDemo } from "./nav/page";
+import { NavigationMenuDemo } from "./nav/nav";
 
 export default function Home() {
   return (
