@@ -13,8 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
-import { NavigationMenuDemo } from "../nav/page";
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -162,6 +161,7 @@ export function DataTableDemo() {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [isEditing, setIsEditing] = React.useState(false);
 
   const table = useReactTable({
     data,
@@ -182,9 +182,18 @@ export function DataTableDemo() {
     },
   });
 
+  const handleCellChange = (
+    rowIndex: number,
+    columnId: string,
+    value: string
+  ) => {
+    // Update the data array with the new value
+    //@ts-ignore
+    data[rowIndex][columnId as keyof Payment] = value;
+  };
+
   return (
     <div className="w-full">
-      <NavigationMenuDemo />
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter Entries"
@@ -250,9 +259,22 @@ export function DataTableDemo() {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
+                      {isEditing ? (
+                        <Input
+                          value={cell.getValue() as string}
+                          onChange={(e) =>
+                            handleCellChange(
+                              row.index,
+                              cell.column.id,
+                              e.target.value
+                            )
+                          }
+                        />
+                      ) : (
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
                       )}
                     </TableCell>
                   ))}
@@ -272,6 +294,14 @@ export function DataTableDemo() {
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditing(!isEditing)}
+        >
+          <Edit className="mr-2 h-4 w-4" />
+          {isEditing ? "Done" : "Edit"}
+        </Button>
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
