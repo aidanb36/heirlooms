@@ -13,7 +13,13 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Edit } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronDown,
+  MoreHorizontal,
+  Edit,
+  Trash,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -34,46 +40,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-const data: Payment[] = [
-  {
-    status: "unknown",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ",
-    title: "Coffee Table",
-    image: "",
-  },
-  {
-    status: "unknown",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ",
-    title: "Painting",
-    image: "",
-  },
-  {
-    status: "unknown",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ",
-    title: "Pottery",
-    image: "",
-  },
-  {
-    status: "unknown",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ",
-    title: "Dresser",
-    image: "",
-  },
-  {
-    status: "unknown",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ",
-    title: "Nightstand",
-    image: "",
-  },
-];
+import { useEffect, useState } from "react";
 
 export type Payment = {
+  _id?: string;
   title: string;
   status: "unknown" | "claimed" | "unwanted";
   description: string;
@@ -85,10 +55,7 @@ export const columns: ColumnDef<Payment>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
+        checked={table.getIsAllPageRowsSelected()}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
       />
@@ -131,29 +98,10 @@ export const columns: ColumnDef<Payment>[] = [
       <div className="capitalize">{row.getValue("image")}</div>
     ),
   },
-
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const payment = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end"></DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
 ];
 
 export function DataTableDemo() {
+  const [data, setData] = useState<Payment[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -162,10 +110,163 @@ export function DataTableDemo() {
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [isEditing, setIsEditing] = React.useState(false);
+  const [editingRow, setEditingRow] = React.useState<Payment | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const response = await fetch("/api/heirlooms?all=true");
+      const data = await response.json();
+      setData(data);
+    } catch (error) {
+      console.error("Error fetching heirlooms:", error);
+    }
+  };
+
+  const handleEdit = (row: Payment) => {
+    setIsEditing(true);
+    setEditingRow(row);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`/api/heirlooms?id=${id}`, {
+        method: "DELETE",
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting heirloom:", error);
+    }
+  };
+
+  const handleSave = async () => {
+    if (editingRow) {
+      try {
+        await fetch(`/api/heirlooms?id=${editingRow._id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editingRow),
+        });
+        setIsEditing(false);
+        setEditingRow(null);
+        fetchData();
+      } catch (error) {
+        console.error("Error updating heirloom:", error);
+      }
+    }
+  };
+
+  const handleImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    rowIndex: number
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const imageDataUrl = reader.result as string;
+        setEditingRow((prevRow) => {
+          if (prevRow) {
+            return {
+              ...prevRow,
+              image: imageDataUrl,
+            };
+          }
+          return null;
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageExpand = (imageUrl: string) => {
+    // Implement the logic to expand the image, e.g., open a modal or navigate to a new page
+    console.log("Expand image:", imageUrl);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditingRow(null);
+  };
+
+  const handleCellChange = (
+    rowIndex: number,
+    columnId: string,
+    value: string
+  ) => {
+    setEditingRow((prevRow) => {
+      if (prevRow) {
+        return {
+          ...prevRow,
+          [columnId]: value,
+        };
+      }
+      return null;
+    });
+  };
+
+  const handleAddRow = async () => {
+    const newHeirloom: Payment = {
+      title: "",
+      status: "unknown",
+      description: "",
+      image: "",
+    };
+
+    try {
+      await fetch("/api/heirlooms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newHeirloom),
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Error adding heirloom:", error);
+    }
+  };
 
   const table = useReactTable({
     data,
-    columns,
+    columns: [
+      ...columns,
+      {
+        id: "actions",
+        enableHiding: false,
+        cell: ({ row }) => {
+          const payment = row.original;
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleEdit(payment)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleDelete(payment._id as any)}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -182,22 +283,12 @@ export function DataTableDemo() {
     },
   });
 
-  const handleCellChange = (
-    rowIndex: number,
-    columnId: string,
-    value: string
-  ) => {
-    // Update the data array with the new value
-    //@ts-ignore
-    data[rowIndex][columnId as keyof Payment] = value;
-  };
-
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter Entries"
-          value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
+          value={table.getColumn("title")?.getFilterValue() as string}
           onChange={(event) =>
             table.getColumn("title")?.setFilterValue(event.target.value)
           }
@@ -259,15 +350,49 @@ export function DataTableDemo() {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {isEditing ? (
-                        <Input
-                          value={cell.getValue() as string}
-                          onChange={(e) =>
-                            handleCellChange(
-                              row.index,
-                              cell.column.id,
-                              e.target.value
-                            )
+                      {isEditing && editingRow?._id === row.original._id ? (
+                        cell.column.id === "status" ? (
+                          <select
+                            //@ts-ignore
+                            value={editingRow[cell.column.id]}
+                            onChange={(e) =>
+                              handleCellChange(
+                                row.index,
+                                cell.column.id,
+                                e.target.value
+                              )
+                            }
+                          >
+                            <option value="unknown">Unknown</option>
+                            <option value="claimed">Claimed</option>
+                            <option value="unwanted">Unwanted</option>
+                          </select>
+                        ) : cell.column.id === "image" ? (
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageChange(e, row.index)}
+                          />
+                        ) : (
+                          <Input
+                            //@ts-ignore
+                            value={editingRow[cell.column.id]}
+                            onChange={(e) =>
+                              handleCellChange(
+                                row.index,
+                                cell.column.id,
+                                e.target.value
+                              )
+                            }
+                          />
+                        )
+                      ) : cell.column.id === "image" ? (
+                        <img
+                          src={cell.getValue() as any}
+                          alt="Heirloom Image"
+                          className="h-12 w-12 cursor-pointer object-cover"
+                          onClick={() =>
+                            handleImageExpand(cell.getValue() as any)
                           }
                         />
                       ) : (
@@ -294,36 +419,44 @@ export function DataTableDemo() {
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsEditing(!isEditing)}
-        >
-          <Edit className="mr-2 h-4 w-4" />
-          {isEditing ? "Done" : "Edit"}
-        </Button>
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
+        {isEditing ? (
+          <>
+            <Button variant="outline" size="sm" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button variant="default" size="sm" onClick={handleSave}>
+              Save
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" size="sm" onClick={handleAddRow}>
+              Add Row
+            </Button>
+            <div className="flex-1 text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Next
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
