@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-
+import { ModeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import { Icons } from "@/components/ui/icons";
 import {
@@ -81,6 +81,7 @@ export function NavigationMenuDemo() {
             </NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
+        <ModeToggle />
       </NavigationMenuList>
     </NavigationMenu>
   );

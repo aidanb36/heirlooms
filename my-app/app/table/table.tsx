@@ -111,6 +111,8 @@ export function DataTableDemo() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [isEditing, setIsEditing] = React.useState(false);
   const [editingRow, setEditingRow] = React.useState<Payment | null>(null);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState(5);
 
   useEffect(() => {
     fetchData();
@@ -142,7 +144,6 @@ export function DataTableDemo() {
     }
   };
 
-  //test
   const handleSave = async () => {
     if (editingRow) {
       try {
@@ -183,11 +184,6 @@ export function DataTableDemo() {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const handleImageExpand = (imageUrl: string) => {
-    // Implement the logic to expand the image, e.g., open a modal or navigate to a new page
-    console.log("Expand image:", imageUrl);
   };
 
   const handleCancel = () => {
@@ -231,6 +227,14 @@ export function DataTableDemo() {
     } catch (error) {
       console.error("Error adding heirloom:", error);
     }
+  };
+
+  const handleImageClick = (imageUrl: string) => {
+    setExpandedImage(imageUrl);
+  };
+
+  const handleCloseExpandedImage = () => {
+    setExpandedImage(null);
   };
 
   const table = useReactTable({
@@ -389,11 +393,11 @@ export function DataTableDemo() {
                         )
                       ) : cell.column.id === "image" ? (
                         <img
-                          src={cell.getValue() as any}
+                          src={cell.getValue() as string}
                           alt="Heirloom Image"
                           className="h-12 w-12 cursor-pointer object-cover"
                           onClick={() =>
-                            handleImageExpand(cell.getValue() as any)
+                            handleImageClick(cell.getValue() as string)
                           }
                         />
                       ) : (
@@ -459,6 +463,23 @@ export function DataTableDemo() {
           </>
         )}
       </div>
+      {expandedImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative">
+            <img
+              src={expandedImage}
+              alt="Expanded Heirloom Image"
+              className="max-h-screen max-w-screen"
+            />
+            <button
+              className="absolute top-4 right-4 rounded bg-white p-2 text-black"
+              onClick={handleCloseExpandedImage}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
