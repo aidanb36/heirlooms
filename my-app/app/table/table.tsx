@@ -84,6 +84,7 @@ export const columns: ColumnDef<Payment>[] = [
     accessorKey: "description",
     header: "description",
     cell: ({ row }) => <div className="">{row.getValue("description")}</div>,
+    enableHiding: true,
   },
   {
     accessorKey: "image",
@@ -113,6 +114,23 @@ export function DataTableDemo() {
     setEditingRow(row);
     setEditingCell(columnId);
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setColumnVisibility({ description: false });
+      } else {
+        setColumnVisibility({ description: true });
+      }
+    };
+
+    handleResize(); // Call initially
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     fetchData();
