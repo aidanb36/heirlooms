@@ -380,104 +380,106 @@ export function DataTableDemo() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {isEditing && editingRow?._id === row.original._id ? (
-                        cell.column.id === "assign" ? (
-                          <select
-                            //@ts-ignore
-                            value={editingRow[cell.column.id]}
-                            onChange={(e) =>
-                              handleCellChange(
-                                row.index,
-                                cell.column.id,
-                                e.target.value
-                              )
-                            }
-                          >
-                            <option value="unknown">Unknown</option>
-                            <option value="aidan">aidan</option>
-                            <option value="madeline">madeline</option>
-                            <option value="mom">mom</option>
-                            <option value="dad">dad</option>
-                          </select>
+      <div className="rounded-md border overflow-x-auto">
+        <div className="min-w-full">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {isEditing && editingRow?._id === row.original._id ? (
+                          cell.column.id === "assign" ? (
+                            <select
+                              //@ts-ignore
+                              value={editingRow[cell.column.id]}
+                              onChange={(e) =>
+                                handleCellChange(
+                                  row.index,
+                                  cell.column.id,
+                                  e.target.value
+                                )
+                              }
+                            >
+                              <option value="unknown">Unknown</option>
+                              <option value="aidan">aidan</option>
+                              <option value="madeline">madeline</option>
+                              <option value="mom">mom</option>
+                              <option value="dad">dad</option>
+                            </select>
+                          ) : cell.column.id === "image" ? (
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageChange(e, row.index)}
+                            />
+                          ) : (
+                            <Input
+                              //@ts-ignore
+                              value={editingRow[cell.column.id]}
+                              onChange={(e) =>
+                                handleCellChange(
+                                  row.index,
+                                  cell.column.id,
+                                  e.target.value
+                                )
+                              }
+                            />
+                          )
                         ) : cell.column.id === "image" ? (
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleImageChange(e, row.index)}
+                          <img
+                            src={cell.getValue() as string}
+                            alt="Heirloom Image"
+                            className="h-12 w-12 cursor-pointer object-cover"
+                            onClick={() =>
+                              handleImageClick(cell.getValue() as string)
+                            }
                           />
                         ) : (
-                          <Input
-                            //@ts-ignore
-                            value={editingRow[cell.column.id]}
-                            onChange={(e) =>
-                              handleCellChange(
-                                row.index,
-                                cell.column.id,
-                                e.target.value
-                              )
-                            }
-                          />
-                        )
-                      ) : cell.column.id === "image" ? (
-                        <img
-                          src={cell.getValue() as string}
-                          alt="Heirloom Image"
-                          className="h-12 w-12 cursor-pointer object-cover"
-                          onClick={() =>
-                            handleImageClick(cell.getValue() as string)
-                          }
-                        />
-                      ) : (
-                        flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )
-                      )}
-                    </TableCell>
-                  ))}
+                          flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         {isEditing ? (
