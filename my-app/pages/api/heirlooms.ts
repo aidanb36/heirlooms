@@ -64,25 +64,42 @@ async function searchHeirlooms(query: string, getAll: boolean) {
 }
 
 //@ts-ignore
-async function addHeirloom(heirloomData) {
+async function addHeirloom(heirloomData: any) {
   const { db } = await connectToDatabase();
   const collection = db.collection("heirloom");
-  return await collection.insertOne(heirloomData);
+
+  // Convert relevant fields to lowercase
+  const lowercaseData = {
+    ...heirloomData,
+    title: heirloomData.title.toLowerCase(),
+    assign: heirloomData.assign.toLowerCase(),
+    description: heirloomData.description.toLowerCase(),
+  };
+
+  return await collection.insertOne(lowercaseData);
 }
 
-//@ts-ignore
-async function updateHeirloom(id, heirloomData) {
+async function updateHeirloom(id: string, heirloomData: any) {
   const { db } = await connectToDatabase();
   const collection = db.collection("heirloom");
 
   // Remove the _id field from the heirloomData object
   const { _id, ...updatedData } = heirloomData;
 
+  // Convert relevant fields to lowercase
+  const lowercaseData = {
+    ...updatedData,
+    title: updatedData.title.toLowerCase(),
+    assign: updatedData.assign.toLowerCase(),
+    description: updatedData.description.toLowerCase(),
+  };
+
   return await collection.updateOne(
     { _id: new ObjectId(id) },
-    { $set: updatedData }
+    { $set: lowercaseData }
   );
 }
+
 //@ts-ignore
 async function deleteHeirloom(id) {
   const { db } = await connectToDatabase();

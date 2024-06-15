@@ -45,7 +45,7 @@ import { useEffect, useState } from "react";
 export type Payment = {
   _id?: string;
   title: string;
-  status: "unknown" | "claimed" | "unwanted";
+  assign: "unknown" | "aidan" | "madeline" | "mom" | "dad";
   description: string;
   image: string;
 };
@@ -71,32 +71,24 @@ export const columns: ColumnDef<Payment>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("status")}</div>
-    ),
+    accessorKey: "assign",
+    header: "assign",
+    cell: ({ row }) => <div className="">{row.getValue("assign")}</div>,
   },
   {
     accessorKey: "title",
-    header: "Title",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("title")}</div>
-    ),
+    header: "title",
+    cell: ({ row }) => <div className="">{row.getValue("title")}</div>,
   },
   {
     accessorKey: "description",
-    header: "Description",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("description")}</div>
-    ),
+    header: "description",
+    cell: ({ row }) => <div className="">{row.getValue("description")}</div>,
   },
   {
     accessorKey: "image",
-    header: "Image",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("image")}</div>
-    ),
+    header: "image",
+    cell: ({ row }) => <div className="">{row.getValue("image")}</div>,
   },
 ];
 
@@ -113,6 +105,14 @@ export function DataTableDemo() {
   const [editingRow, setEditingRow] = React.useState<Payment | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState(5);
+
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+
+  const handleCellClick = (row: Payment, columnId: string) => {
+    setIsEditing(true);
+    setEditingRow(row);
+    setEditingCell(columnId);
+  };
 
   useEffect(() => {
     fetchData();
@@ -169,23 +169,77 @@ export function DataTableDemo() {
   ) => {
     const file = e.target.files?.[0];
     if (file) {
+      const maxSizeInBytes = 1 * 1024 * 1024; // 1MB in bytes
       const reader = new FileReader();
-      reader.onload = () => {
-        const imageDataUrl = reader.result as string;
-        setEditingRow((prevRow) => {
-          if (prevRow) {
-            return {
-              ...prevRow,
-              image: imageDataUrl,
-            };
+
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          let width = img.width;
+          let height = img.height;
+
+          // Adjust the image dimensions while maintaining the aspect ratio
+          if (width > height) {
+            if (width > 800) {
+              height *= 800 / width;
+              width = 800;
+            }
+          } else {
+            if (height > 800) {
+              width *= 800 / height;
+              height = 800;
+            }
           }
-          return null;
-        });
+
+          canvas.width = width;
+          canvas.height = height;
+
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          let quality = 0.9; // Initial quality value
+
+          const adjustQuality = () => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob && blob.size > maxSizeInBytes) {
+                  quality -= 0.1;
+                  if (quality < 0.1) {
+                    alert(
+                      "Image compression failed. Please select a smaller image."
+                    );
+                    return;
+                  }
+                  adjustQuality();
+                } else {
+                  const imageDataUrl = canvas.toDataURL("image/jpeg", quality);
+                  setEditingRow((prevRow) => {
+                    if (prevRow) {
+                      return {
+                        ...prevRow,
+                        image: imageDataUrl,
+                      };
+                    }
+                    return null;
+                  });
+                }
+              },
+              "image/jpeg",
+              quality
+            );
+          };
+
+          adjustQuality();
+        };
       };
+
       reader.readAsDataURL(file);
     }
   };
-
   const handleCancel = () => {
     setIsEditing(false);
     setEditingRow(null);
@@ -210,7 +264,7 @@ export function DataTableDemo() {
   const handleAddRow = async () => {
     const newHeirloom: Payment = {
       title: "",
-      status: "unknown",
+      assign: "unknown",
       description: "",
       image: "",
     };
@@ -251,20 +305,20 @@ export function DataTableDemo() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
+                  <span className="sr-only">open menu</span>
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleEdit(payment)}>
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit
+                  edit
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleDelete(payment._id as any)}
                 >
                   <Trash className="mr-2 h-4 w-4" />
-                  Delete
+                  delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -302,7 +356,7 @@ export function DataTableDemo() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
+              columns <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -313,7 +367,7 @@ export function DataTableDemo() {
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
-                    className="capitalize"
+                    className=""
                     checked={column.getIsVisible()}
                     onCheckedChange={(value) =>
                       column.toggleVisibility(!!value)
@@ -356,7 +410,7 @@ export function DataTableDemo() {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {isEditing && editingRow?._id === row.original._id ? (
-                        cell.column.id === "status" ? (
+                        cell.column.id === "assign" ? (
                           <select
                             //@ts-ignore
                             value={editingRow[cell.column.id]}
@@ -369,8 +423,10 @@ export function DataTableDemo() {
                             }
                           >
                             <option value="unknown">Unknown</option>
-                            <option value="claimed">Claimed</option>
-                            <option value="unwanted">Unwanted</option>
+                            <option value="aidan">aidan</option>
+                            <option value="madeline">madeline</option>
+                            <option value="mom">mom</option>
+                            <option value="dad">dad</option>
                           </select>
                         ) : cell.column.id === "image" ? (
                           <input
@@ -427,16 +483,16 @@ export function DataTableDemo() {
         {isEditing ? (
           <>
             <Button variant="outline" size="sm" onClick={handleCancel}>
-              Cancel
+              cancel
             </Button>
             <Button variant="default" size="sm" onClick={handleSave}>
-              Save
+              save
             </Button>
           </>
         ) : (
           <>
             <Button variant="outline" size="sm" onClick={handleAddRow}>
-              Add Row
+              add row
             </Button>
             <div className="flex-1 text-sm text-muted-foreground">
               {table.getFilteredSelectedRowModel().rows.length} of{" "}

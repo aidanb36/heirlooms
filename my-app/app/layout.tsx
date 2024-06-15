@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-
+import { NavigationMenuDemo } from "./nav/nav";
+import Link from "next/link";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -24,7 +25,17 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <div className="flex flex-col">
+            <header className="flex justify-between w-full p-8">
+              <Link href="/">
+                <div>family heirlooms</div>
+              </Link>
+              <div>
+                <NavigationMenuDemo />
+              </div>
+            </header>
+            <main className="flex-1 mx-auto max-w-5xl">{children}</main>
+          </div>
         </ThemeProvider>
       </body>
     </html>
