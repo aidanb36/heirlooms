@@ -662,13 +662,13 @@ export function DataTableDemo() {
                     <div>
                       <label htmlFor="assign">Assign</label>
                       <Select
-                        id="assign"
                         name="assign"
                         value={newHeirloom.assign}
                         onValueChange={(value) =>
                           handleDialogChange({
-                            target: { name: "assign", value },
-                          })
+                            target: { name: "assign", value } as EventTarget &
+                              HTMLInputElement,
+                          } as React.ChangeEvent<HTMLInputElement>)
                         }
                         required
                       >
