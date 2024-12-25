@@ -28,7 +28,7 @@ export default function RootLayout({
           <div className="flex flex-col">
             <header className="flex justify-between w-full p-8">
               <Link href="/">
-                <div>family heirlooms</div>
+                <div>brown family heirlooms</div>
               </Link>
               <div>
                 <NavigationMenuDemo />
