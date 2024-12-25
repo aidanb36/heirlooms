@@ -14,6 +14,21 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowUpDown,
   ChevronDown,
   MoreHorizontal,
@@ -108,6 +123,46 @@ export function DataTableDemo() {
   const [pageSize, setPageSize] = useState(5);
 
   const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newHeirloom, setNewHeirloom] = useState<Payment>({
+    title: "",
+    assign: "unknown",
+    description: "",
+    image: "",
+  });
+
+  const handleDialogChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewHeirloom((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleDialogSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await fetch("/api/heirlooms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newHeirloom),
+      });
+      fetchData();
+      setIsDialogOpen(false);
+      setNewHeirloom({
+        title: "",
+        assign: "unknown",
+        description: "",
+        image: "",
+      });
+    } catch (error) {
+      console.error("Error adding heirloom:", error);
+    }
+  };
 
   const handleCellClick = (row: Payment, columnId: string) => {
     setIsEditing(true);
@@ -298,6 +353,76 @@ export function DataTableDemo() {
       fetchData();
     } catch (error) {
       console.error("Error adding heirloom:", error);
+    }
+  };
+
+  const handleDialogImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const maxSizeInBytes = 1 * 1024 * 1024; // 1MB in bytes
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          let width = img.width;
+          let height = img.height;
+
+          // Adjust the image dimensions while maintaining the aspect ratio
+          if (width > height) {
+            if (width > 800) {
+              height *= 800 / width;
+              width = 800;
+            }
+          } else {
+            if (height > 800) {
+              width *= 800 / height;
+              height = 800;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          let quality = 0.9; // Initial quality value
+
+          const adjustQuality = () => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob && blob.size > maxSizeInBytes) {
+                  quality -= 0.1;
+                  if (quality < 0.1) {
+                    alert(
+                      "Image compression failed. Please select a smaller image."
+                    );
+                    return;
+                  }
+                  adjustQuality();
+                } else {
+                  const imageDataUrl = canvas.toDataURL("image/jpeg", quality);
+                  setNewHeirloom((prev) => ({
+                    ...prev,
+                    image: imageDataUrl,
+                  }));
+                }
+              },
+              "image/jpeg",
+              quality
+            );
+          };
+
+          adjustQuality();
+        };
+      };
+
+      reader.readAsDataURL(file);
     }
   };
 
@@ -511,9 +636,87 @@ export function DataTableDemo() {
           </>
         ) : (
           <>
-            <Button variant="outline" size="sm" onClick={handleAddRow}>
-              add row
-            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  add row
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogTitle>Add New Heirloom</DialogTitle>
+                <DialogDescription>
+                  Fill in the details for the new heirloom.
+                </DialogDescription>
+                <form onSubmit={handleDialogSubmit}>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="title">Title</label>
+                      <Input
+                        id="title"
+                        name="title"
+                        value={newHeirloom.title}
+                        onChange={handleDialogChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="assign">Assign</label>
+                      <Select
+                        id="assign"
+                        name="assign"
+                        value={newHeirloom.assign}
+                        onValueChange={(value) =>
+                          handleDialogChange({
+                            target: { name: "assign", value },
+                          })
+                        }
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an assignee" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unknown">Unknown</SelectItem>
+                          <SelectItem value="aidan">aidan</SelectItem>
+                          <SelectItem value="madeline">madeline</SelectItem>
+                          <SelectItem value="mom">mom</SelectItem>
+                          <SelectItem value="dad">dad</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label htmlFor="description">Description</label>
+                      <Input
+                        id="description"
+                        name="description"
+                        value={newHeirloom.description}
+                        onChange={handleDialogChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="image">Image</label>
+                      <Input
+                        type="file"
+                        id="image"
+                        name="image"
+                        accept="image/*"
+                        onChange={handleDialogImageChange}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-end space-x-2">
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button type="submit" variant="default">
+                      Submit
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
             <div className="flex-1 text-sm text-muted-foreground">
               {table.getFilteredSelectedRowModel().rows.length} of{" "}
               {table.getFilteredRowModel().rows.length} row(s) selected.
